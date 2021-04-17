@@ -1,17 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.IO;
 
 namespace WpfTreeView
@@ -39,10 +29,93 @@ namespace WpfTreeView
         /// <param name="e"></param>
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            foreach(var drive in Directory.GetLogicalDrives())
+            try
             {
+                // Loops through the logical drives on the computer
+                foreach (var drive in Directory.GetLogicalDrives())
+                {
+                    // Create a new item for it
+                    var item = new TreeViewItem()
+                    {
+                        // Set the header
+                        Header = drive,
+                        // Set the full path
+                        Tag = drive
+                    };    
 
+                    // Add a shitty item
+                    item.Items.Add(null);
+
+                    // Listen out for item being expanded
+                    item.Expanded += Folder_Expanded;
+
+                    // Add it to the main tree-view
+                    FolderView.Items.Add(item);
+                }
             }
+            catch (System.IO.IOException)
+            {
+                System.Console.WriteLine("An I/O error occurs.");
+            }
+            catch (System.Security.SecurityException)
+            {
+                System.Console.WriteLine("The caller does not have the " +
+                    "required permission.");
+            }
+        }
+
+        private void Folder_Expanded(object sender, RoutedEventArgs e)
+        {
+            var item = (TreeViewItem)sender;
+
+            // If the item only contains the shitty data
+            if (item.Items.Count != 1 || item.Items[0] == null)
+                return;
+
+            // Clear shitty data
+            item.Items.Clear();
+
+            // Get full path
+            var fullPath = (String)item.Tag;
+
+            // Create a new list for all direcroties
+            var directories = new List<String>();
+
+            // Try and get directories , Ignoring any issues. 
+            try
+            {
+                var dirs = Directory.GetDirectories(fullPath);
+
+                if(dirs.Length > 0)
+                {
+                    directories.AddRange(dirs);
+                }
+            }
+            catch{}
+
+            // For each directory
+            directories.ForEach(directoryPath =>
+            {
+                // Create directory item
+                var subItem = new TreeViewItem()
+                {
+                    // Set header as folder name
+                    Header = Path.GetDirectoryName(directoryPath),
+                    // And tag as full path
+                    Tag = directoryPath
+                };
+
+                // Add a shitty item so we can expand folder
+                subItem.Items.Add(null);
+
+                // Handle expanding (recursive)
+                subItem.Expanded += Folder_Expanded;
+
+                // Add this item to the parent
+                item.Items.Add(subItem);
+
+            });
+
         }
         #endregion
     }
