@@ -63,9 +63,13 @@ namespace WpfTreeView
                     "required permission.");
             }
         }
+        #endregion
 
+        #region Folder Expanded
         private void Folder_Expanded(object sender, RoutedEventArgs e)
         {
+            #region Initial Checks
+
             var item = (TreeViewItem)sender;
 
             // If the item only contains the shitty data
@@ -77,6 +81,10 @@ namespace WpfTreeView
 
             // Get full path
             var fullPath = (String)item.Tag;
+            #endregion
+
+
+            #region Get Folders 
 
             // Create a new list for all direcroties
             var directories = new List<String>();
@@ -113,10 +121,70 @@ namespace WpfTreeView
 
                 // Add this item to the parent
                 item.Items.Add(subItem);
-
             });
+            #endregion
+
+            #region Get Files
+            // Create a new list for all files
+            var files = new List<String>();
+
+            // Try and get files from the folder , Ignoring any issues. 
+            try
+            {
+                var fs = Directory.GetFiles(fullPath);
+
+                if (fs.Length > 0)
+                {
+                    files.AddRange(fs);
+                }
+            }
+            catch { }
+
+            // For each directory
+            files.ForEach(filePath =>
+            {
+                // Create directory item
+                var subItem = new TreeViewItem()
+                {
+                    // Set header as file name
+                    Header = Path.GetFileName(filePath),
+                    // And tag as full path
+                    Tag = filePath
+                };
+
+                // Add this item to the parent
+                item.Items.Add(subItem);
+            });
+            #endregion
 
         }
         #endregion
+
+
+
+        /// <summary>
+        /// Find the file of folder name from a full path
+        /// </summary>
+        /// <param name="path">The full path</param>
+        /// <returns></returns>
+        public static string GetFileFolderName(string path)
+        {
+            // if we have no path, return empty
+            if (string.IsNullOrEmpty(path))
+                return string.Empty;
+
+            // make all slashes back slashes
+            var normalizedPath = path.Replace('/', '\\');
+
+            // find the last backslash in the path
+            var lastIndex = normalizedPath.LastIndexOf('\\');
+
+            // if we dont find a backslash, return the path itself
+            if (lastIndex <= 0)
+                return path;
+
+            // return the name after the last backslash
+            return path.Substring(lastIndex + 1);
+        }
     }
 }
